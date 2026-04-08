@@ -153,6 +153,18 @@ function CutoutOverlay({ regions }: { regions: Region[] }) {
       preserveAspectRatio="none"
     >
       <path d={buildCutoutPath(regions)} fill="rgba(13,14,18,0.6)" fillRule="evenodd" />
+      {regions.map((region) => (
+        <rect
+          key={region.id}
+          x={region.left}
+          y={region.top}
+          width={region.width}
+          height={region.height}
+          rx={20}
+          ry={20}
+          fill="rgba(13,14,18,0.1)"
+        />
+      ))}
     </svg>
   );
 }
