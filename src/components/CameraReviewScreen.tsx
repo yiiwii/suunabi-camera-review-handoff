@@ -120,6 +120,43 @@ function createNextRegion(regions: Region[]): Region | null {
   return resolved ? { ...resolved, id: candidate.id } : null;
 }
 
+function roundedRectPath(x: number, y: number, width: number, height: number, radius: number) {
+  const r = Math.max(0, Math.min(radius, width / 2, height / 2));
+  return [
+    `M ${x + r} ${y}`,
+    `H ${x + width - r}`,
+    `A ${r} ${r} 0 0 1 ${x + width} ${y + r}`,
+    `V ${y + height - r}`,
+    `A ${r} ${r} 0 0 1 ${x + width - r} ${y + height}`,
+    `H ${x + r}`,
+    `A ${r} ${r} 0 0 1 ${x} ${y + height - r}`,
+    `V ${y + r}`,
+    `A ${r} ${r} 0 0 1 ${x + r} ${y}`,
+    'Z',
+  ].join(' ');
+}
+
+function buildCutoutPath(regions: Region[]) {
+  const paths = [`M 0 0 H ${CAMERA_W} V ${CAMERA_H} H 0 Z`];
+  for (const region of regions) {
+    paths.push(roundedRectPath(region.left, region.top, region.width, region.height, 20));
+  }
+  return paths.join(' ');
+}
+
+function CutoutOverlay({ regions }: { regions: Region[] }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className="absolute inset-0 h-full w-full pointer-events-none"
+      viewBox={`0 0 ${CAMERA_W} ${CAMERA_H}`}
+      preserveAspectRatio="none"
+    >
+      <path d={buildCutoutPath(regions)} fill="rgba(13,14,18,0.6)" fillRule="evenodd" />
+    </svg>
+  );
+}
+
 function CornerStroke({ color, style }: { color: string; style: React.CSSProperties }) {
   return (
     <svg
@@ -220,8 +257,6 @@ function QuestionRegion({
         transition: active ? 'none' : snapping ? 'left 120ms ease-out, top 120ms ease-out' : 'none',
       }}
     >
-      <div className="absolute inset-0 rounded-[20px]" style={{ background: 'rgba(217,217,217,0.45)' }} />
-
       <div
         className="absolute rounded-[16px]"
         style={{ left: '50%', width: dragWidth, height: dragHeight, top: dragTop, cursor: 'grab', transform: 'translateX(-50%)' }}
@@ -431,7 +466,7 @@ export function CameraReviewScreen({ showHitAreas }: { showHitAreas: boolean }) 
           className="absolute inset-0 h-full w-full object-cover"
           style={{ objectPosition: 'center center' }}
         />
-        <div className="absolute inset-0" style={{ background: 'rgba(13,14,18,0.18)' }} />
+        <CutoutOverlay regions={regions} />
 
         {regions.map((r, i) => (
           <QuestionRegion
