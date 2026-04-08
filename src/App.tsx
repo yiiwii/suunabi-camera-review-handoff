@@ -61,13 +61,38 @@ export default function App() {
   const isMobile = useIsMobileViewport();
   const viewport = useViewportSize();
 
+  useEffect(() => {
+    if (!isMobile) return;
+
+    const { body, documentElement } = document;
+    const prevBodyOverflow = body.style.overflow;
+    const prevBodyOverscroll = body.style.overscrollBehavior;
+    const prevBodyTouchAction = body.style.touchAction;
+    const prevHtmlOverflow = documentElement.style.overflow;
+    const prevHtmlOverscroll = documentElement.style.overscrollBehavior;
+
+    body.style.overflow = 'hidden';
+    body.style.overscrollBehavior = 'none';
+    body.style.touchAction = 'none';
+    documentElement.style.overflow = 'hidden';
+    documentElement.style.overscrollBehavior = 'none';
+
+    return () => {
+      body.style.overflow = prevBodyOverflow;
+      body.style.overscrollBehavior = prevBodyOverscroll;
+      body.style.touchAction = prevBodyTouchAction;
+      documentElement.style.overflow = prevHtmlOverflow;
+      documentElement.style.overscrollBehavior = prevHtmlOverscroll;
+    };
+  }, [isMobile]);
+
   if (isMobile) {
     const scale = Math.min(viewport.width / ARTBOARD_WIDTH, viewport.height / ARTBOARD_HEIGHT);
     const fittedWidth = ARTBOARD_WIDTH * scale;
     const fittedHeight = ARTBOARD_HEIGHT * scale;
 
     return (
-      <div className="flex h-[100dvh] w-full items-center justify-center overflow-hidden bg-black">
+      <div className="flex h-[100dvh] w-full items-center justify-center overflow-hidden bg-black touch-none">
         <div
           className="overflow-hidden"
           style={{
