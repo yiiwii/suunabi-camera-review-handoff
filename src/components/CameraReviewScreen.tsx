@@ -506,7 +506,7 @@ export function CameraReviewScreen({ showHitAreas }: { showHitAreas: boolean }) 
       <div className="absolute inset-x-0 bottom-0 bg-white px-[20px]" style={{ top: CAMERA_H, paddingBottom: IOS_SAFE_AREA_BOTTOM + 10 }}>
         <div className="absolute left-[20px] right-[20px] top-[10px]">
           <p className="truncate font-['Hiragino_Sans',sans-serif] text-[14px] leading-none text-center" style={{ color: 'rgba(13,14,18,0.6)' }}>
-            {isSingle ? '一個の枠内に1問を配置してください。' : '枠の大きさを調整してください。'}
+            {'1枠につき1問'}
           </p>
         </div>
 
