@@ -463,7 +463,7 @@ export function CameraReviewScreen({ showHitAreas }: { showHitAreas: boolean }) 
   function handleAddRegion() {
     const next = createNextRegion(regions);
     if (!next) {
-      showToast('当前页面已满。\n无法添加更多选框');
+      showToast('これ以上の問題枠を追加できません');
       return;
     }
     setRegions((prev) => [...prev, next]);
