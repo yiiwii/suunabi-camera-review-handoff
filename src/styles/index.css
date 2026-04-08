@@ -1,0 +1,29 @@
+@import './fonts.css';
+@import 'tailwindcss';
+
+html,
+body,
+#root {
+  min-height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  overflow-x: auto;
+  overflow-y: auto;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+@keyframes toast-in-out {
+  0% { opacity: 0; transform: translateY(4px); }
+  12% { opacity: 1; transform: translateY(0); }
+  75% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(0); }
+}

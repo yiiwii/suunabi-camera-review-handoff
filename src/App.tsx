@@ -1,0 +1,69 @@
+import { useState } from 'react';
+import { CameraReviewScreen } from './components/CameraReviewScreen';
+import {
+  IOS_DEVICE_HEIGHT,
+  IOS_DEVICE_WIDTH,
+  IOS_DYNAMIC_ISLAND_HEIGHT,
+  IOS_DYNAMIC_ISLAND_TOP,
+  IOS_DYNAMIC_ISLAND_WIDTH,
+  IOS_FRAME_RADIUS,
+  IOS_SCREEN_RADIUS,
+} from './components/device';
+
+export default function App() {
+  const [showHitAreas, setShowHitAreas] = useState(false);
+
+  return (
+    <div className="min-h-screen overflow-x-auto bg-[linear-gradient(180deg,#eef4f8_0%,#f7f9fb_100%)] px-5 py-6 sm:px-6 sm:py-8">
+      <div className="mx-auto flex max-w-[980px] items-center justify-center">
+        <div className="flex min-h-[calc(100vh-48px)] items-center justify-center rounded-[32px] border border-white/70 bg-[rgba(255,255,255,0.45)] p-8 shadow-[0_24px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm">
+          <div className="relative">
+            <div className="absolute right-0 top-[-52px] flex items-center gap-3 rounded-full border border-white/80 bg-white/92 px-4 py-2 shadow-[0_12px_30px_rgba(15,23,42,0.10)] backdrop-blur">
+              <span className="text-[12px] font-medium text-slate-600">Hit Areas</span>
+              <button
+                type="button"
+                aria-pressed={showHitAreas}
+                onClick={() => setShowHitAreas((value) => !value)}
+                className={`relative inline-flex h-[22px] w-10 items-center rounded-full transition-colors ${
+                  showHitAreas ? 'bg-[#339bc9]' : 'bg-[rgba(13,14,18,0.18)]'
+                }`}
+              >
+                <span
+                  className={`block h-[18px] w-[18px] rounded-full bg-white shadow transition-transform ${
+                    showHitAreas ? 'translate-x-[20px]' : 'translate-x-[2px]'
+                  }`}
+                />
+              </button>
+            </div>
+
+            <div
+              className="relative bg-black p-3 shadow-2xl"
+              style={{ width: IOS_DEVICE_WIDTH + 24, borderRadius: IOS_FRAME_RADIUS }}
+            >
+              <div
+                className="relative overflow-hidden bg-white"
+                style={{ width: IOS_DEVICE_WIDTH, height: IOS_DEVICE_HEIGHT, borderRadius: IOS_SCREEN_RADIUS }}
+              >
+                <div
+                  className="absolute left-1/2 z-50 -translate-x-1/2 rounded-full bg-black"
+                  style={{
+                    top: IOS_DYNAMIC_ISLAND_TOP,
+                    width: IOS_DYNAMIC_ISLAND_WIDTH,
+                    height: IOS_DYNAMIC_ISLAND_HEIGHT,
+                  }}
+                />
+                <div className="h-full w-full overflow-hidden">
+                  <CameraReviewScreen showHitAreas={showHitAreas} />
+                </div>
+              </div>
+            </div>
+
+            <div className="absolute -right-1 top-32 h-12 w-1 rounded-l bg-black" />
+            <div className="absolute -right-1 top-48 h-20 w-1 rounded-l bg-black" />
+            <div className="absolute -left-1 top-40 h-14 w-1 rounded-r bg-black" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
