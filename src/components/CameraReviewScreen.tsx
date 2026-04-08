@@ -304,7 +304,7 @@ function QuestionRegion({
 
       {showRemove && (
         <button onPointerDown={(e) => e.stopPropagation()} onClick={onRemove} className="absolute" style={{ width: CLOSE_SIZE, height: CLOSE_SIZE, right: 8, top: 8 }}>
-          <span className="absolute right-[2px] top-[2px] flex items-center justify-center rounded-full font-['Rco',sans-serif] text-[11px] leading-none text-white" style={{ background: 'rgba(13,14,18,0.4)', width: 20, height: 20 }}>
+          <span className="absolute right-[2px] top-[2px] flex items-center justify-center rounded-full font-['Rco',sans-serif] text-[11px] leading-none text-white" style={{ background: 'rgba(13,14,18,0.6)', width: 20, height: 20 }}>
             {'\uE92A'}
           </span>
         </button>
@@ -503,21 +503,23 @@ export function CameraReviewScreen({ showHitAreas }: { showHitAreas: boolean }) 
         </button>
       </div>
 
-      <div className="absolute inset-x-0 bottom-0 flex flex-col items-center justify-end bg-white px-[20px]" style={{ top: CAMERA_H, paddingBottom: IOS_SAFE_AREA_BOTTOM + 10, gap: 10 }}>
-        <div className="w-full flex items-center justify-center px-[30px] pt-[14px] pb-[2px]">
-          <p className="font-['Hiragino_Sans',sans-serif] text-[16px] leading-normal text-center" style={{ color: 'rgba(13,14,18,0.6)' }}>
+      <div className="absolute inset-x-0 bottom-0 bg-white px-[20px]" style={{ top: CAMERA_H, paddingBottom: IOS_SAFE_AREA_BOTTOM + 10 }}>
+        <div className="absolute left-[20px] right-[20px] top-[10px]">
+          <p className="truncate font-['Hiragino_Sans',sans-serif] text-[14px] leading-none text-center" style={{ color: 'rgba(13,14,18,0.6)' }}>
             {isSingle ? '一個の枠内に1問を配置してください。' : '枠の大きさを調整してください。'}
           </p>
         </div>
 
-        <button onClick={handleAddRegion} className="flex h-[52px] w-full items-center justify-center gap-[6px] rounded-[12px]">
+        <div className="flex h-full flex-col items-center justify-end gap-[10px] pt-[34px]">
+          <button onClick={handleAddRegion} className="flex h-[52px] w-full items-center justify-center gap-[6px] rounded-[12px]">
           <span className="font-['Rco',sans-serif] text-[18px] leading-none tracking-[0.36px]" style={{ color: '#0371a4' }}>{'\uE957'}</span>
           <span className="font-['Hiragino_Sans',sans-serif] text-[16px] leading-none" style={{ color: '#0371a4' }}>もう1問追加</span>
         </button>
 
-        <button className="flex h-[56px] w-full items-center justify-center rounded-[12px] border-b-4 font-['Hiragino_Sans',sans-serif] text-[16px] font-bold text-white" style={{ background: '#339bc9', borderColor: '#0371a4' }}>
+          <button className="flex h-[56px] w-full items-center justify-center rounded-[12px] border-b-4 font-['Hiragino_Sans',sans-serif] text-[16px] font-bold text-white" style={{ background: '#339bc9', borderColor: '#0371a4' }}>
           確認
         </button>
+        </div>
       </div>
 
       {toast && <ReviewToast key={toast.key} message={toast.message} />}
