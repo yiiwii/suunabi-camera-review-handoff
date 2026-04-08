@@ -10,6 +10,9 @@ import {
   IOS_SCREEN_RADIUS,
 } from './components/device';
 
+const ARTBOARD_WIDTH = IOS_DEVICE_WIDTH;
+const ARTBOARD_HEIGHT = IOS_DEVICE_HEIGHT;
+
 function useIsMobileViewport() {
   const [isMobile, setIsMobile] = useState(() => {
     if (typeof window === 'undefined') return false;
@@ -27,15 +30,61 @@ function useIsMobileViewport() {
   return isMobile;
 }
 
+function useViewportSize() {
+  const [size, setSize] = useState(() => ({
+    width: typeof window === 'undefined' ? ARTBOARD_WIDTH : window.innerWidth,
+    height: typeof window === 'undefined' ? ARTBOARD_HEIGHT : window.innerHeight,
+  }));
+
+  useEffect(() => {
+    const update = () => {
+      setSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
+
+    update();
+    window.addEventListener('resize', update);
+    window.addEventListener('orientationchange', update);
+    return () => {
+      window.removeEventListener('resize', update);
+      window.removeEventListener('orientationchange', update);
+    };
+  }, []);
+
+  return size;
+}
+
 export default function App() {
   const [showHitAreas, setShowHitAreas] = useState(false);
   const isMobile = useIsMobileViewport();
+  const viewport = useViewportSize();
 
   if (isMobile) {
+    const scale = Math.min(viewport.width / ARTBOARD_WIDTH, viewport.height / ARTBOARD_HEIGHT);
+    const fittedWidth = ARTBOARD_WIDTH * scale;
+    const fittedHeight = ARTBOARD_HEIGHT * scale;
+
     return (
-      <div className="h-[100dvh] w-full overflow-hidden bg-black">
-        <div className="h-full w-full overflow-hidden bg-white">
-          <CameraReviewScreen showHitAreas={false} />
+      <div className="flex h-[100dvh] w-full items-center justify-center overflow-hidden bg-black">
+        <div
+          className="overflow-hidden"
+          style={{
+            width: fittedWidth,
+            height: fittedHeight,
+          }}
+        >
+          <div
+            className="origin-top-left"
+            style={{
+              width: ARTBOARD_WIDTH,
+              height: ARTBOARD_HEIGHT,
+              transform: `scale(${scale})`,
+            }}
+          >
+            <CameraReviewScreen showHitAreas={false} />
+          </div>
         </div>
       </div>
     );
