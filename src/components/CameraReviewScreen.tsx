@@ -162,7 +162,7 @@ function CutoutOverlay({ regions }: { regions: Region[] }) {
           height={region.height}
           rx={20}
           ry={20}
-          fill="rgba(13,14,18,0.1)"
+          fill="rgba(13,14,18,0.2)"
         />
       ))}
     </svg>
