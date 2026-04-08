@@ -284,8 +284,8 @@ function QuestionRegion({
 
       <CornerBrackets active={active} />
 
-      <div className="absolute flex items-center justify-center rounded-full px-[10px] pointer-events-none" style={{ background: active ? '#339bc9' : '#ffffff', height: 20, left: 8, top: 8 }}>
-        <span className="font-['Rco',sans-serif] text-[12px] leading-none" style={{ color: active ? '#ffffff' : '#339bc9' }}>
+      <div className="absolute flex items-center justify-center rounded-full px-[10px] pointer-events-none" style={{ background: '#339bc9', height: 20, left: 8, top: 8 }}>
+        <span className="font-['Rco',sans-serif] text-[12px] leading-none" style={{ color: '#ffffff' }}>
           Q{index + 1}
         </span>
       </div>
