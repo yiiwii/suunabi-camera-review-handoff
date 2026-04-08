@@ -17,3 +17,12 @@ npm install
 npm run dev
 npm run build
 ```
+
+## GitHub Pages
+
+This repo includes `.github/workflows/deploy-pages.yml` for GitHub Pages deployment.
+
+- Create the GitHub repository with Pages enabled
+- Push to `main`
+- The workflow will build and deploy `dist`
+- `vite.config.ts` automatically uses the repository name as the Pages base path on GitHub Actions
