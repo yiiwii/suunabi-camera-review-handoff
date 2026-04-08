@@ -495,11 +495,6 @@ export function CameraReviewScreen({ showHitAreas }: { showHitAreas: boolean }) 
           />
         ))}
 
-        <div className="absolute inset-x-0 flex items-center justify-center px-[30px]" style={{ top: 510 }}>
-          <p className="font-['Hiragino_Sans',sans-serif] text-center text-[16px] leading-normal text-white" style={{ opacity: 0.7 }}>
-            {isSingle ? '一個の枠内に1問を配置してください。' : '枠の大きさを調整してください。'}
-          </p>
-        </div>
       </div>
 
       <div className="pointer-events-none absolute inset-x-0 z-10 flex items-center px-[10px]" style={{ top: IOS_SAFE_AREA_TOP + 4, height: 56 }}>
@@ -509,6 +504,12 @@ export function CameraReviewScreen({ showHitAreas }: { showHitAreas: boolean }) 
       </div>
 
       <div className="absolute inset-x-0 bottom-0 flex flex-col items-center justify-end bg-white px-[20px]" style={{ top: CAMERA_H, paddingBottom: IOS_SAFE_AREA_BOTTOM + 10, gap: 10 }}>
+        <div className="w-full flex items-center justify-center px-[30px] pt-[14px] pb-[2px]">
+          <p className="font-['Hiragino_Sans',sans-serif] text-[16px] leading-normal text-center" style={{ color: 'rgba(13,14,18,0.6)' }}>
+            {isSingle ? '一個の枠内に1問を配置してください。' : '枠の大きさを調整してください。'}
+          </p>
+        </div>
+
         <button onClick={handleAddRegion} className="flex h-[52px] w-full items-center justify-center gap-[6px] rounded-[12px]">
           <span className="font-['Rco',sans-serif] text-[18px] leading-none tracking-[0.36px]" style={{ color: '#0371a4' }}>{'\uE957'}</span>
           <span className="font-['Hiragino_Sans',sans-serif] text-[16px] leading-none" style={{ color: '#0371a4' }}>もう1問追加</span>
