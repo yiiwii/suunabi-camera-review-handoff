@@ -68,21 +68,36 @@ export default function App() {
     const prevBodyOverflow = body.style.overflow;
     const prevBodyOverscroll = body.style.overscrollBehavior;
     const prevBodyTouchAction = body.style.touchAction;
+    const prevBodyUserSelect = body.style.userSelect;
+    const prevBodyWebkitUserSelect = body.style.webkitUserSelect;
+    const prevBodyWebkitTouchCallout = body.style.webkitTouchCallout;
     const prevHtmlOverflow = documentElement.style.overflow;
     const prevHtmlOverscroll = documentElement.style.overscrollBehavior;
+    const prevHtmlUserSelect = documentElement.style.userSelect;
+    const prevHtmlWebkitUserSelect = documentElement.style.webkitUserSelect;
 
     body.style.overflow = 'hidden';
     body.style.overscrollBehavior = 'none';
     body.style.touchAction = 'none';
+    body.style.userSelect = 'none';
+    body.style.webkitUserSelect = 'none';
+    body.style.webkitTouchCallout = 'none';
     documentElement.style.overflow = 'hidden';
     documentElement.style.overscrollBehavior = 'none';
+    documentElement.style.userSelect = 'none';
+    documentElement.style.webkitUserSelect = 'none';
 
     return () => {
       body.style.overflow = prevBodyOverflow;
       body.style.overscrollBehavior = prevBodyOverscroll;
       body.style.touchAction = prevBodyTouchAction;
+      body.style.userSelect = prevBodyUserSelect;
+      body.style.webkitUserSelect = prevBodyWebkitUserSelect;
+      body.style.webkitTouchCallout = prevBodyWebkitTouchCallout;
       documentElement.style.overflow = prevHtmlOverflow;
       documentElement.style.overscrollBehavior = prevHtmlOverscroll;
+      documentElement.style.userSelect = prevHtmlUserSelect;
+      documentElement.style.webkitUserSelect = prevHtmlWebkitUserSelect;
     };
   }, [isMobile]);
 
@@ -92,16 +107,16 @@ export default function App() {
     const fittedHeight = ARTBOARD_HEIGHT * scale;
 
     return (
-      <div className="flex h-[100dvh] w-full items-center justify-center overflow-hidden bg-black touch-none">
+      <div className="flex h-[100dvh] w-full items-center justify-center overflow-hidden bg-black touch-none select-none">
         <div
-          className="overflow-hidden"
+          className="overflow-hidden select-none"
           style={{
             width: fittedWidth,
             height: fittedHeight,
           }}
         >
           <div
-            className="origin-top-left"
+            className="origin-top-left select-none"
             style={{
               width: ARTBOARD_WIDTH,
               height: ARTBOARD_HEIGHT,
