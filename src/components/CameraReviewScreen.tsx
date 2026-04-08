@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { IOS_SAFE_AREA_BOTTOM, IOS_SAFE_AREA_TOP } from './device';
+import imgUsabilityTestSheet from '../assets/usability-test-question-sheet.jpeg';
 
 const CAMERA_H = 559;
 const CAMERA_W = 375;
@@ -424,7 +425,13 @@ export function CameraReviewScreen({ showHitAreas }: { showHitAreas: boolean }) 
   return (
     <div className="relative h-full w-full overflow-hidden bg-white">
       <div className="absolute inset-x-0 top-0 overflow-hidden" style={{ height: CAMERA_H }}>
-        <div className="absolute inset-0" style={{ background: 'rgba(13,14,18,0.85)' }} />
+        <img
+          src={imgUsabilityTestSheet}
+          alt="Usability test question sheet"
+          className="absolute inset-0 h-full w-full object-cover"
+          style={{ objectPosition: 'center center' }}
+        />
+        <div className="absolute inset-0" style={{ background: 'rgba(13,14,18,0.18)' }} />
 
         {regions.map((r, i) => (
           <QuestionRegion
