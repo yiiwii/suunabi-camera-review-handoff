@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CameraReviewScreen } from './components/CameraReviewScreen';
 import {
   IOS_DEVICE_HEIGHT,
@@ -10,8 +10,36 @@ import {
   IOS_SCREEN_RADIUS,
 } from './components/device';
 
+function useIsMobileViewport() {
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(max-width: 767px)').matches;
+  });
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 767px)');
+    const update = () => setIsMobile(media.matches);
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
+
+  return isMobile;
+}
+
 export default function App() {
   const [showHitAreas, setShowHitAreas] = useState(false);
+  const isMobile = useIsMobileViewport();
+
+  if (isMobile) {
+    return (
+      <div className="h-[100dvh] w-full overflow-hidden bg-black">
+        <div className="h-full w-full overflow-hidden bg-white">
+          <CameraReviewScreen showHitAreas={false} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen overflow-x-auto bg-[linear-gradient(180deg,#eef4f8_0%,#f7f9fb_100%)] px-5 py-6 sm:px-6 sm:py-8">
