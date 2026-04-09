@@ -1,227 +1,186 @@
-# Camera Review Cropping Box - Latest Implementation Constraints
+# Camera Review 裁剪框 - 实现约束
 
-This document is a direct implementation spec for native iOS and Android teams. Treat it as a behavior and layout contract, not a moodboard.
+本文档是给原生 iOS 和 Android 团队的直接实现规格。请把它当成行为契约，而不是视觉 moodboard。
 
-## 1. Screen Model
+## 1. 屏幕模型
 
-- The outer frame is a real device screen, not a mockup container.
-- The camera review area must adapt to the actual device screen and safe areas.
-- Do not hardcode a single device canvas size.
-- All geometry should be derived from the rendered screen bounds at runtime.
-- Use the top-left of the camera viewport as the origin for box coordinates.
+- 外层框架是真实设备屏幕，不是 mockup 外壳。
+- camera review 区域必须适配真实设备屏幕尺寸和安全区域。
+- 不要硬编码成单一设备画布大小。
+- 所有几何信息都应在运行时根据实际渲染后的屏幕边界推导。
+- 以 camera viewport 左上角作为选框坐标原点。
 
-## 2. Visual Hierarchy
+## 2. 选框默认值
 
-The camera area should read as:
+- 初始选框：
+  - 尺寸：`320 x 120` 的参考比例
+  - 位置：居中于 camera viewport
+- 新增选框：
+  - 尺寸：`120 x 120` 的参考比例
+  - 位置：居中于 camera viewport
+- 最小选框尺寸：
+  - 宽：`72`
+  - 高：`72`
 
-1. Base content image
-2. Outer dark overlay at `60%` black
-3. Selected box cutout area with a lighter `20%` black internal overlay
-4. Box border, brackets, label, and close control on top
+参考尺寸在需要时应按实际 viewport 等比例缩放。这里强调的是比例关系，不是固定的设备像素画布。
 
-The result should feel like a focused crop tool, not a flat full-screen dimmer.
+## 3. 交互状态
 
-## 3. Camera Content
-
-- The current prototype uses a paper/test-sheet image as the camera content.
-- This image is only a content placeholder for usability testing.
-- Native implementations should support any camera image or live camera feed using the same overlay and box logic.
-
-## 4. Box Defaults
-
-- Initial box:
-  - reference size: `320 x 120`
-  - position: centered in the camera viewport
-- New box:
-  - reference size: `120 x 120`
-  - position: centered in the camera viewport
-- Minimum box size:
-  - width: `72`
-  - height: `72`
-
-The reference sizes should scale with the actual viewport if needed. The intent is proportion, not a fixed device pixel canvas.
-
-## 5. Interaction States
-
-Each box has four states:
+每个选框有四种状态：
 - idle
 - active drag
 - active resize
 - snap correction
 
-State rules:
-- active drag and active resize both allow temporary overlap
-- active state changes must be immediate
-- release state should clear active styling
+状态规则：
+- active drag 和 active resize 都允许临时重叠
+- active 状态变化必须立即生效
+- 释放后应清除 active 样式
 
-## 6. Box Styling
+## 4. 拖拽约束
 
-### Label
+### 拖拽热区
 
-- The `Q1 / Q2 / ...` label badge is always blue.
-- Label text is always white.
-- The badge should remain visible against bright paper backgrounds.
-- Do not switch the label back to a white badge in idle state.
+- 拖拽热区是选框内部，但不是整个选框。
+- 对于横向较宽的矩形，允许拖拽的区域应包含：
+  - 中间主体区域
+  - 上方中段区域
+- 拖拽区域必须避开：
+  - 关闭按钮
+  - 四角 resize 区域
+- 即使选框很矮或很窄，拖拽区域也必须保持可用。
 
-### Close button
+### 拖拽行为
 
-- Close button visual size: `20 x 20`
-- Close hit target size: `32 x 32`
-- The visible icon should sit slightly inset from the hit target.
-- The close button background should be `60%` black.
-- Close must have higher priority than drag and resize.
-- Tapping close removes the box immediately.
-- Close must never start a drag or resize gesture.
+- 按住时拖拽是允许的。
+- 不要因为重叠而阻止实时移动。
+- 拖拽过程中要始终保持选框在可见 camera viewport 内。
+- 拖拽过程中不要 snap。
 
-### Corner brackets
+## 5. 缩放约束
 
-- Corner brackets are stroke-style, not solid blocks.
-- Idle state: white brackets
-- Active state: brand blue brackets (`#339bc9`)
-- The top-right corner must be adjusted so it does not conflict with the close button.
+### 缩放热区
 
-## 7. Drag Constraint
+- 缩放使用四个方形角点热区。
+- 热区可以比可见角标更大。
+- 右上角缩放点必须特别缩小或偏移，以避免和关闭按钮冲突。
 
-### Drag hit area
+### 缩放行为
 
-- The drag hit area is the box interior, but not the entire visible box.
-- For wide rectangles, the usable drag zone should include:
-  - the central body
-  - the upper middle strip
-- The drag zone must avoid:
-  - close button
-  - resize corners
-- The drag zone should remain usable even when the box is short or narrow.
+- 按住时缩放是允许的。
+- 不要因为重叠而阻止实时移动。
+- 缩放过程中要强制最小尺寸。
+- 缩放过程中不要 snap。
 
-### Drag behavior
+## 6. 关闭约束
 
-- Drag is permissive while the pointer is down.
-- Do not block live movement because of overlap.
-- Keep the box inside the visible camera viewport during drag.
-- Do not snap during drag.
+- 关闭按钮视觉尺寸：`20 x 20`
+- 关闭命中热区尺寸：`32 x 32`
+- 可见图标应比热区稍微内缩。
+- 关闭按钮的优先级必须高于拖拽和缩放。
+- 点击关闭应立即删除选框。
+- 关闭动作绝不能启动拖拽或缩放手势。
 
-## 8. Resize Constraint
+## 7. 释放时的修正
 
-### Resize hit area
+当用户松开正在拖拽或缩放的选框时：
 
-- Resize uses four square corner hit zones.
-- Hit zones may be larger than the visible corner brackets.
-- The top-right resize corner must be specially reduced or offset to avoid conflict with the close button.
+1. 检查该选框是否与其他选框重叠。
+2. 如果没有重叠，保留当前位置。
+3. 如果有重叠，搜索最近的合法、且在边界内的位置。
+4. 修正时保持选框尺寸不变。
+5. 如果存在合法位置，则 snap 到那里。
+6. 如果不存在合法位置，则回退到手势开始前的位置。
 
-### Resize behavior
+规则：
+- 只修正被编辑的那个选框
+- 其他选框保持不变
+- 释放修正绝不能让系统停留在非法重叠状态
 
-- Resize is permissive while the pointer is down.
-- Do not block live movement because of overlap.
-- Enforce the minimum size during resize.
-- Do not snap during resize.
+## 8. 最近位置搜索
 
-## 9. Release Resolution
+- 搜索范围为当前整个 camera viewport。
+- 评估所有能让选框保持在边界内的候选位置。
+- 排除所有与现有选框重叠的候选位置。
+- 选择距离释放位置最近的候选位置。
+- 使用确定性的 tie-break 规则：
+  - 先比较更小的垂直移动
+  - 再比较更小的水平移动
+  - 再比较从上到下
+  - 再比较从左到右
 
-When the user releases a dragged or resized box:
+结果必须在重复运行时保持稳定。
 
-1. Check whether the box is touching or overlapping any other box.
-2. If it does not touch or overlap, keep the current position.
-3. If it touches or overlaps, keep the box on the same side and clamp it against the encountered boundary.
-4. Keep the box size fixed during resolution.
-5. Do not teleport the box to the other side of the obstruction.
-6. If the box cannot be kept in a legal same-side position, revert to the pre-gesture position.
+## 9. Snap 动效
 
-Rules:
-- only the edited box is resolved
-- other boxes remain unchanged
-- release resolution must never leave the system in an invalid overlap state
-- release resolution must preserve the user’s boundary expectation and must not cross to the opposite side of the obstacle
+- 只有在释放修正改变了选框位置时才播放 snap 动效。
+- 时长：`120ms`
+- 缓动：`ease-out`
+- 只对位置修正做动画。
+- 不要在每一帧拖拽时做动画。
+- 这里不要使用 spring 动效。
 
-## 10. Nearest Placement Search
+## 10. 满状态处理
 
-- Search is edge-based, not teleport-based.
-- When a drag or resize would overlap another box, clamp the moving edge to the first contacted boundary.
-- Preserve the original side of the drag or resize.
-- Do not search the full viewport for a different empty slot on the opposite side.
-- If multiple boundary contacts are possible, pick the one closest to the released position.
-- Use deterministic tie-breaking:
-  - smaller vertical movement first
-  - then smaller horizontal movement
-  - then top-to-bottom
-  - then left-to-right
+如果用户尝试新增选框，但已经没有合法位置：
+- 不要创建新选框
+- 显示一个居中的 toast
 
-The result must be stable across repeated runs and must feel like the box was stopped by contact, not relocated.
-
-## 11. Snap Motion
-
-- Snap animation only happens when release resolution changes the box position.
-- Duration: `120ms`
-- Timing: `ease-out`
-- Animate only the position correction.
-- Do not animate every drag frame.
-- Do not use spring motion here.
-
-## 12. Bottom Hint Text
-
-- The hint text must sit outside the camera area, inside the white action section.
-- The gap between the camera area and the hint text should be `10px`.
-- The hint should be a single line, no wrapping.
-- Left and right page margins for the white section should be `20px`.
-- Text color should be `rgba(13,14,18,0.6)`.
-
-Example copy:
-
-- `一個の枠内に1問を配置してください。`
-- `枠の大きさを調整してください。`
-
-The hint should feel secondary and should not compete with the camera content.
-
-## 13. Full State Handling
-
-If the user tries to add a new box and no legal placement exists:
-- do not create the box
-- show a centered toast message
-
-Toast text:
+Toast 文案：
 
 ```text
 当前页面已满。
 无法添加更多选框
 ```
 
-Toast requirements:
-- centered in the visible screen
-- temporary
-- does not block the rest of the app permanently
+Toast 要求：
+- 居中显示在可见屏幕中
+- 临时出现
+- 不要永久阻塞应用
 
-## 14. Edge Cases
+## 11. 视觉反馈
 
-- Very wide boxes must still feel draggable from the middle and top-middle area.
-- Very small boxes must still keep usable drag and close targets.
-- The top-right corner is the only corner that needs special conflict handling.
-- A box must never remain trapped inside another box after release.
-- The user should never need to shrink a box below the minimum size just to move it.
+Active 状态：
+- 四角角标变为品牌蓝
+- badge 背景变为品牌蓝
+- badge 文字变为白色
 
-## 15. Native Implementation Guidance
+Idle 状态：
+- 四角角标变为白色
+- badge 背景变为白色
+- badge 文字变为品牌蓝
 
-- Keep geometry in a box model with `left`, `top`, `width`, `height`.
-- Store the gesture start rect before live updates begin.
-- Compute live drag and resize from the start rect plus pointer delta.
-- Resolve collisions only on release.
-- Derive layout from measured screen bounds, not a hardcoded device canvas.
-- Keep hit slop generous while preserving small visual affordances.
-- Preserve coordinate precision during collision math; round only for rendering.
-- Use a composited mask or clip-path approach for the cutout so the inner box remains visually transparent enough to reveal the content image.
+active 状态的颜色变化必须在手势开始时立即生效，并在释放时立即恢复。
 
-## 16. Acceptance Criteria
+## 12. 边界情况
 
-The implementation is correct when:
-- the camera review area fits the real device screen
-- the initial box is centered and visually larger
-- new boxes are centered and smaller
-- the outer overlay is `60%` black
-- the box interior retains a lighter `20%` black emphasis while still revealing content
-- label badges stay blue with white text in all states
-- the close button stays visually small with a `32 x 32` hit target and `60%` black background
-- drag and resize can overlap temporarily
-- release never leaves invalid overlap and never crosses to the opposite side of the obstacle
-- active feedback is visible and immediate
-- the top-right corner does not conflict with close
-- the hint text is outside the camera area with a `10px` gap
-- full-state toast appears centered
-- snap correction is short and deterministic
+- 很宽的选框必须仍然可以从中间和上方中段区域拖动。
+- 很小的选框必须仍然保留可用的拖拽和关闭热区。
+- 只有右上角需要特殊冲突处理。
+- 一个选框在释放后绝不能被困在另一个选框里。
+- 用户不应该为了移动选框而必须把它缩小到最小尺寸以下。
+
+## 13. 原生实现指导
+
+- 使用包含 `left`, `top`, `width`, `height` 的选框模型。
+- 在实时更新开始前，先保存手势起始 rect。
+- 拖拽和缩放的实时结果应通过“起始 rect + 指针位移”来计算。
+- 只在释放时做碰撞修正。
+- 布局应根据测量后的屏幕边界推导，而不是硬编码设备画布。
+- 保持热区宽松，但可见控件依然要保持小巧。
+- 碰撞计算应保留坐标精度，只有渲染时再做四舍五入。
+
+## 14. 验收标准
+
+实现正确的标准是：
+
+- camera review 区域能适配真实设备屏幕
+- 初始选框居中且视觉上更大
+- 新增选框居中且更小
+- 拖拽和缩放过程中可以临时重叠
+- 释放时不会留下非法重叠
+- active 反馈即时可见
+- 关闭按钮视觉上保持小巧但易点击
+- 右上角不会与关闭按钮冲突
+- 满状态 toast 居中显示
+- snap 修正短促且稳定
