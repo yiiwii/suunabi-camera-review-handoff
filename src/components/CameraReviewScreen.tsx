@@ -77,6 +77,14 @@ function compareCandidate(a: Region, b: Region, targetLeft: number, targetTop: n
   return a.left - b.left;
 }
 
+function overlapsHorizontally(a: Region, b: Region): boolean {
+  return a.left < b.left + b.width && a.left + a.width > b.left;
+}
+
+function overlapsVertically(a: Region, b: Region): boolean {
+  return a.top < b.top + b.height && a.top + a.height > b.top;
+}
+
 function findNearestValidPlacement(region: Region, regions: Region[]): Region | null {
   let best: Region | null = null;
   const maxLeft = CAMERA_W - region.width;
@@ -143,6 +151,173 @@ function resolveRegionRelease(region: Region, regions: Region[], fallbackRegion?
   }
 
   return region;
+}
+
+function resolveLiveDrag(region: Region, start: Region, regions: Region[], ignoreId: number, dx: number, dy: number): Region {
+  const maxLeft = CAMERA_W - region.width;
+  const maxTop = CAMERA_H - region.height;
+  let left = clamp(region.left, 0, maxLeft);
+  let top = clamp(region.top, 0, maxTop);
+
+  if (dx > 0) {
+    let limit = maxLeft;
+    const probe = { ...region, left, top };
+    for (const other of regions) {
+      if (other.id === ignoreId) continue;
+      if (!overlapsVertically(probe, other)) continue;
+      if (other.left < start.left + start.width) continue;
+      limit = Math.min(limit, other.left - region.width);
+    }
+    left = Math.min(left, limit);
+  } else if (dx < 0) {
+    let limit = 0;
+    const probe = { ...region, left, top };
+    for (const other of regions) {
+      if (other.id === ignoreId) continue;
+      if (!overlapsVertically(probe, other)) continue;
+      if (other.left + other.width > start.left) continue;
+      limit = Math.max(limit, other.left + other.width);
+    }
+    left = Math.max(left, limit);
+  }
+
+  const horizontalProbe = { ...region, left, top };
+  if (dy > 0) {
+    let limit = maxTop;
+    for (const other of regions) {
+      if (other.id === ignoreId) continue;
+      if (!overlapsHorizontally(horizontalProbe, other)) continue;
+      if (other.top < start.top + start.height) continue;
+      limit = Math.min(limit, other.top - region.height);
+    }
+    top = Math.min(top, limit);
+  } else if (dy < 0) {
+    let limit = 0;
+    for (const other of regions) {
+      if (other.id === ignoreId) continue;
+      if (!overlapsHorizontally(horizontalProbe, other)) continue;
+      if (other.top + other.height > start.top) continue;
+      limit = Math.max(limit, other.top + other.height);
+    }
+    top = Math.max(top, limit);
+  }
+
+  return {
+    ...region,
+    left: clamp(left, 0, maxLeft),
+    top: clamp(top, 0, maxTop),
+  };
+}
+
+function resolveLiveResize(
+  region: Region,
+  start: Region,
+  regions: Region[],
+  ignoreId: number,
+  handle: ResizeHandle,
+): Region {
+  let left = region.left;
+  let top = region.top;
+  let width = region.width;
+  let height = region.height;
+  const rightFixed = start.left + start.width;
+  const bottomFixed = start.top + start.height;
+
+  if (handle === 'se' || handle === 'sw') {
+    const verticalProbe = { ...region, left, top, width, height };
+    let boundary = handle === 'se' ? CAMERA_W : 0;
+    for (const other of regions) {
+      if (other.id === ignoreId) continue;
+      if (!overlapsVertically(verticalProbe, other)) continue;
+      if (handle === 'se') {
+        if (other.left < rightFixed) continue;
+        boundary = Math.min(boundary, other.left);
+      } else {
+        if (other.left + other.width > start.left) continue;
+        boundary = Math.max(boundary, other.left + other.width);
+      }
+    }
+    if (handle === 'se') {
+      width = Math.min(width, boundary - left);
+    } else {
+      left = Math.max(left, boundary);
+      width = rightFixed - left;
+    }
+  }
+
+  if (handle === 'se' || handle === 'ne') {
+    const horizontalProbe = { ...region, left, top, width, height };
+    let boundary = handle === 'se' ? CAMERA_H : 0;
+    for (const other of regions) {
+      if (other.id === ignoreId) continue;
+      if (!overlapsHorizontally(horizontalProbe, other)) continue;
+      if (handle === 'se') {
+        if (other.top < bottomFixed) continue;
+        boundary = Math.min(boundary, other.top);
+      } else {
+        if (other.top + other.height > start.top) continue;
+        boundary = Math.max(boundary, other.top + other.height);
+      }
+    }
+    if (handle === 'se') {
+      height = Math.min(height, boundary - top);
+    } else {
+      top = Math.max(top, boundary);
+      height = bottomFixed - top;
+    }
+  }
+
+  if (handle === 'nw' || handle === 'ne') {
+    const verticalProbe = { ...region, left, top, width, height };
+    let boundary = handle === 'nw' ? 0 : CAMERA_W;
+    for (const other of regions) {
+      if (other.id === ignoreId) continue;
+      if (!overlapsVertically(verticalProbe, other)) continue;
+      if (handle === 'nw') {
+        if (other.left + other.width > start.left) continue;
+        boundary = Math.max(boundary, other.left + other.width);
+      } else {
+        if (other.left < rightFixed) continue;
+        boundary = Math.min(boundary, other.left);
+      }
+    }
+    if (handle === 'nw') {
+      left = Math.max(left, boundary);
+      width = rightFixed - left;
+    } else {
+      width = Math.min(width, boundary - left);
+    }
+  }
+
+  if (handle === 'nw' || handle === 'sw') {
+    const horizontalProbe = { ...region, left, top, width, height };
+    let boundary = handle === 'nw' ? 0 : CAMERA_H;
+    for (const other of regions) {
+      if (other.id === ignoreId) continue;
+      if (!overlapsHorizontally(horizontalProbe, other)) continue;
+      if (handle === 'nw') {
+        if (other.top + other.height > start.top) continue;
+        boundary = Math.max(boundary, other.top + other.height);
+      } else {
+        if (other.top < bottomFixed) continue;
+        boundary = Math.min(boundary, other.top);
+      }
+    }
+    if (handle === 'nw') {
+      top = Math.max(top, boundary);
+      height = bottomFixed - top;
+    } else {
+      height = Math.min(height, boundary - top);
+    }
+  }
+
+  return {
+    ...region,
+    left: clamp(left, 0, CAMERA_W - width),
+    top: clamp(top, 0, CAMERA_H - height),
+    width: clamp(width, MIN_SIZE, CAMERA_W - left),
+    height: clamp(height, MIN_SIZE, CAMERA_H - top),
+  };
 }
 
 function createNextRegion(regions: Region[]): Region | null {
@@ -391,11 +566,18 @@ export function CameraReviewScreen({ showHitAreas }: { showHitAreas: boolean }) 
         prev.map((r) => {
           if (r.id !== ia.id) return r;
           if (ia.type === 'drag') {
-            return {
-              ...r,
-              left: clamp(s.left + dx, 0, CAMERA_W - s.width),
-              top: clamp(s.top + dy, 0, CAMERA_H - s.height),
-            };
+            return resolveLiveDrag(
+              {
+                ...r,
+                left: s.left + dx,
+                top: s.top + dy,
+              },
+              s,
+              prev,
+              ia.id,
+              dx,
+              dy,
+            );
           }
 
           let { left, top, width, height } = s;
@@ -420,7 +602,13 @@ export function CameraReviewScreen({ showHitAreas }: { showHitAreas: boolean }) 
             height = s.top + s.height - top;
           }
 
-          return { ...r, left, top, width, height };
+          return resolveLiveResize(
+            { ...r, left, top, width, height },
+            s,
+            prev,
+            ia.id,
+            h,
+          );
         }),
       );
     }
