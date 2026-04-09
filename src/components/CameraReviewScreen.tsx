@@ -95,13 +95,48 @@ function findNearestValidPlacement(region: Region, regions: Region[]): Region | 
   return best;
 }
 
+function findNearestEdgePlacement(region: Region, regions: Region[]): Region | null {
+  const maxLeft = CAMERA_W - region.width;
+  const maxTop = CAMERA_H - region.height;
+  const candidates: Region[] = [];
+  const seen = new Set<string>();
+
+  const addCandidate = (left: number, top: number) => {
+    if (left < 0 || top < 0 || left > maxLeft || top > maxTop) return;
+    const key = `${left}:${top}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    candidates.push({ ...region, left, top });
+  };
+
+  for (const other of regions) {
+    if (other.id === region.id) continue;
+    if (!overlaps(region, other)) continue;
+
+    addCandidate(other.left - region.width, region.top);
+    addCandidate(other.left + other.width, region.top);
+    addCandidate(region.left, other.top - region.height);
+    addCandidate(region.left, other.top + other.height);
+  }
+
+  let best: Region | null = null;
+  for (const candidate of candidates) {
+    if (overlapsAny(candidate, regions, region.id)) continue;
+    if (!best || compareCandidate(candidate, best, region.left, region.top) < 0) {
+      best = candidate;
+    }
+  }
+
+  return best;
+}
+
 function resolveRegionRelease(region: Region, regions: Region[], fallbackRegion?: Region): Region {
   if (isWithinBounds(region) && !overlapsAny(region, regions, region.id)) {
     return region;
   }
 
-  const snapped = isWithinBounds(region) ? findNearestValidPlacement(region, regions) : null;
-  if (snapped) return snapped;
+  const edgeSnapped = isWithinBounds(region) ? findNearestEdgePlacement(region, regions) : null;
+  if (edgeSnapped) return edgeSnapped;
 
   if (fallbackRegion && isWithinBounds(fallbackRegion) && !overlapsAny(fallbackRegion, regions, region.id)) {
     return fallbackRegion;
