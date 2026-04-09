@@ -138,19 +138,133 @@ function findNearestEdgePlacement(region: Region, regions: Region[]): Region | n
   return best;
 }
 
-function resolveRegionRelease(region: Region, regions: Region[], fallbackRegion?: Region): Region {
+function resolveDragRelease(region: Region, regions: Region[], start: Region): Region {
   if (isWithinBounds(region) && !overlapsAny(region, regions, region.id)) {
     return region;
   }
 
-  const edgeSnapped = isWithinBounds(region) ? findNearestEdgePlacement(region, regions) : null;
-  if (edgeSnapped) return edgeSnapped;
+  const dx = region.left - start.left;
+  const dy = region.top - start.top;
+  const maxLeft = CAMERA_W - region.width;
+  const maxTop = CAMERA_H - region.height;
+  const candidates: Region[] = [];
+  const addCandidate = (left: number, top: number) => {
+    const candidate: Region = {
+      ...region,
+      left: clamp(left, 0, maxLeft),
+      top: clamp(top, 0, maxTop),
+    };
+    if (!overlapsAny(candidate, regions, region.id)) {
+      candidates.push(candidate);
+    }
+  };
+  const horizontalPreferred = Math.abs(dx) >= Math.abs(dy);
 
-  if (fallbackRegion && isWithinBounds(fallbackRegion) && !overlapsAny(fallbackRegion, regions, region.id)) {
-    return fallbackRegion;
+  for (const other of regions) {
+    if (other.id === region.id) continue;
+    if (horizontalPreferred) {
+      if (dx >= 0 && overlapsVertically(region, other)) addCandidate(other.left - region.width, region.top);
+      if (dx < 0 && overlapsVertically(region, other)) addCandidate(other.left + other.width, region.top);
+    } else {
+      if (dy >= 0 && overlapsHorizontally(region, other)) addCandidate(region.left, other.top - region.height);
+      if (dy < 0 && overlapsHorizontally(region, other)) addCandidate(region.left, other.top + other.height);
+    }
   }
 
-  return region;
+  if (!candidates.length) {
+    for (const other of regions) {
+      if (other.id === region.id) continue;
+      if (horizontalPreferred) {
+        if (dx >= 0 && overlapsVertically(region, other)) addCandidate(other.left - region.width, region.top);
+        if (dx < 0 && overlapsVertically(region, other)) addCandidate(other.left + other.width, region.top);
+      } else {
+        if (dy >= 0 && overlapsHorizontally(region, other)) addCandidate(region.left, other.top - region.height);
+        if (dy < 0 && overlapsHorizontally(region, other)) addCandidate(region.left, other.top + other.height);
+      }
+    }
+  }
+
+  if (!candidates.length) {
+    return findNearestValidPlacement(region, regions) ?? region;
+  }
+
+  candidates.sort((a, b) => compareCandidate(a, b, region.left, region.top));
+  return candidates[0];
+}
+
+function resolveResizeRelease(region: Region, regions: Region[], start: Region, handle: ResizeHandle): Region {
+  if (isWithinBounds(region) && !overlapsAny(region, regions, region.id)) {
+    return region;
+  }
+
+  let left = region.left;
+  let top = region.top;
+  let right = region.left + region.width;
+  let bottom = region.top + region.height;
+  const startRight = start.left + start.width;
+  const startBottom = start.top + start.height;
+
+  if (handle === 'se' || handle === 'ne') {
+    let boundary = CAMERA_W;
+    for (const other of regions) {
+      if (other.id === region.id) continue;
+      if (!overlapsVertically(region, other)) continue;
+      boundary = Math.min(boundary, other.left);
+    }
+    right = Math.min(right, boundary);
+  }
+
+  if (handle === 'sw' || handle === 'nw') {
+    let boundary = 0;
+    for (const other of regions) {
+      if (other.id === region.id) continue;
+      if (!overlapsVertically(region, other)) continue;
+      boundary = Math.max(boundary, other.left + other.width);
+    }
+    left = Math.max(left, boundary);
+  }
+
+  if (handle === 'se' || handle === 'sw') {
+    let boundary = CAMERA_H;
+    for (const other of regions) {
+      if (other.id === region.id) continue;
+      if (!overlapsHorizontally(region, other)) continue;
+      boundary = Math.min(boundary, other.top);
+    }
+    bottom = Math.min(bottom, boundary);
+  }
+
+  if (handle === 'ne' || handle === 'nw') {
+    let boundary = 0;
+    for (const other of regions) {
+      if (other.id === region.id) continue;
+      if (!overlapsHorizontally(region, other)) continue;
+      boundary = Math.max(boundary, other.top + other.height);
+    }
+    top = Math.max(top, boundary);
+  }
+
+  const next: Region = {
+    ...region,
+    left: clamp(left, 0, CAMERA_W - MIN_SIZE),
+    top: clamp(top, 0, CAMERA_H - MIN_SIZE),
+    width: clamp(right - left, MIN_SIZE, CAMERA_W - left),
+    height: clamp(bottom - top, MIN_SIZE, CAMERA_H - top),
+  };
+
+  if (!overlapsAny(next, regions, region.id)) {
+    return next;
+  }
+
+  return findNearestValidPlacement(next, regions) ?? next;
+}
+
+function resolveRegionRelease(region: Region, regions: Region[], interaction: Interaction): Region {
+  if (interaction.type === 'resize' && interaction.handle) {
+    return resolveResizeRelease(region, regions, interaction.startRegion, interaction.handle);
+  }
+
+  return resolveDragRelease(region, regions, interaction.startRegion);
 }
 
 function resolveLiveDrag(region: Region, start: Region, regions: Region[], ignoreId: number, dx: number, dy: number): Region {
@@ -606,7 +720,7 @@ export function CameraReviewScreen({ showHitAreas }: { showHitAreas: boolean }) 
         const currentRegions = regionsRef.current;
         const nextRegions = currentRegions.map((region) => {
           if (region.id !== ia.id) return region;
-          return resolveRegionRelease(region, currentRegions, ia.startRegion);
+          return resolveRegionRelease(region, currentRegions, ia);
         });
         setRegions(nextRegions);
 
