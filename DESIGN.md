@@ -1,22 +1,39 @@
-# Camera Review Cropping Box - Implementation Constraints
+# Camera Review Cropping Box - Latest Implementation Constraints
 
-This document is a direct implementation spec for native iOS and Android teams. Treat it as a behavior contract, not a visual moodboard.
+This document is a direct implementation spec for native iOS and Android teams. Treat it as a behavior and layout contract, not a moodboard.
 
 ## 1. Screen Model
 
-- The outer frame is a real device screen, not a mockup shell.
-- The camera review area must adapt to the actual device screen size and safe areas.
+- The outer frame is a real device screen, not a mockup container.
+- The camera review area must adapt to the actual device screen and safe areas.
 - Do not hardcode a single device canvas size.
 - All geometry should be derived from the rendered screen bounds at runtime.
 - Use the top-left of the camera viewport as the origin for box coordinates.
 
-## 2. Box Defaults
+## 2. Visual Hierarchy
+
+The camera area should read as:
+
+1. Base content image
+2. Outer dark overlay at `60%` black
+3. Selected box cutout area with a lighter `20%` black internal overlay
+4. Box border, brackets, label, and close control on top
+
+The result should feel like a focused crop tool, not a flat full-screen dimmer.
+
+## 3. Camera Content
+
+- The current prototype uses a paper/test-sheet image as the camera content.
+- This image is only a content placeholder for usability testing.
+- Native implementations should support any camera image or live camera feed using the same overlay and box logic.
+
+## 4. Box Defaults
 
 - Initial box:
-  - size: `320 x 120` reference proportion
+  - reference size: `320 x 120`
   - position: centered in the camera viewport
 - New box:
-  - size: `120 x 120` reference proportion
+  - reference size: `120 x 120`
   - position: centered in the camera viewport
 - Minimum box size:
   - width: `72`
@@ -24,7 +41,7 @@ This document is a direct implementation spec for native iOS and Android teams. 
 
 The reference sizes should scale with the actual viewport if needed. The intent is proportion, not a fixed device pixel canvas.
 
-## 3. Interaction States
+## 5. Interaction States
 
 Each box has four states:
 - idle
@@ -37,11 +54,37 @@ State rules:
 - active state changes must be immediate
 - release state should clear active styling
 
-## 4. Drag Constraint
+## 6. Box Styling
+
+### Label
+
+- The `Q1 / Q2 / ...` label badge is always blue.
+- Label text is always white.
+- The badge should remain visible against bright paper backgrounds.
+- Do not switch the label back to a white badge in idle state.
+
+### Close button
+
+- Close button visual size: `20 x 20`
+- Close hit target size: `32 x 32`
+- The visible icon should sit slightly inset from the hit target.
+- The close button background should be `60%` black.
+- Close must have higher priority than drag and resize.
+- Tapping close removes the box immediately.
+- Close must never start a drag or resize gesture.
+
+### Corner brackets
+
+- Corner brackets are stroke-style, not solid blocks.
+- Idle state: white brackets
+- Active state: brand blue brackets (`#339bc9`)
+- The top-right corner must be adjusted so it does not conflict with the close button.
+
+## 7. Drag Constraint
 
 ### Drag hit area
 
-- The drag hit area is the box interior, but not the whole box.
+- The drag hit area is the box interior, but not the entire visible box.
 - For wide rectangles, the usable drag zone should include:
   - the central body
   - the upper middle strip
@@ -57,7 +100,7 @@ State rules:
 - Keep the box inside the visible camera viewport during drag.
 - Do not snap during drag.
 
-## 5. Resize Constraint
+## 8. Resize Constraint
 
 ### Resize hit area
 
@@ -72,46 +115,39 @@ State rules:
 - Enforce the minimum size during resize.
 - Do not snap during resize.
 
-## 6. Close Constraint
-
-- Close button visual size: `20 x 20`
-- Close hit target size: `32 x 32`
-- The visible icon should sit slightly inset from the hit target.
-- Close must have higher priority than drag and resize.
-- Tapping close removes the box immediately.
-- Close must never start a drag or resize gesture.
-
-## 7. Release Resolution
+## 9. Release Resolution
 
 When the user releases a dragged or resized box:
 
-1. Check whether the box overlaps any other box.
-2. If it does not overlap, keep the current position.
-3. If it overlaps, search for the nearest valid in-bounds position.
+1. Check whether the box is touching or overlapping any other box.
+2. If it does not touch or overlap, keep the current position.
+3. If it touches or overlaps, keep the box on the same side and clamp it against the encountered boundary.
 4. Keep the box size fixed during resolution.
-5. If a valid position exists, snap there.
-6. If no valid position exists, revert to the pre-gesture position.
+5. Do not teleport the box to the other side of the obstruction.
+6. If the box cannot be kept in a legal same-side position, revert to the pre-gesture position.
 
 Rules:
 - only the edited box is resolved
 - other boxes remain unchanged
 - release resolution must never leave the system in an invalid overlap state
+- release resolution must preserve the user’s boundary expectation and must not cross to the opposite side of the obstacle
 
-## 8. Nearest Placement Search
+## 10. Nearest Placement Search
 
-- Search inside the full current camera viewport.
-- Evaluate all candidate positions that keep the box inside bounds.
-- Reject candidates that overlap any existing box.
-- Pick the candidate closest to the released position.
+- Search is edge-based, not teleport-based.
+- When a drag or resize would overlap another box, clamp the moving edge to the first contacted boundary.
+- Preserve the original side of the drag or resize.
+- Do not search the full viewport for a different empty slot on the opposite side.
+- If multiple boundary contacts are possible, pick the one closest to the released position.
 - Use deterministic tie-breaking:
   - smaller vertical movement first
   - then smaller horizontal movement
   - then top-to-bottom
   - then left-to-right
 
-The result must be stable across repeated runs.
+The result must be stable across repeated runs and must feel like the box was stopped by contact, not relocated.
 
-## 9. Snap Motion
+## 11. Snap Motion
 
 - Snap animation only happens when release resolution changes the box position.
 - Duration: `120ms`
@@ -120,7 +156,22 @@ The result must be stable across repeated runs.
 - Do not animate every drag frame.
 - Do not use spring motion here.
 
-## 10. Full State Handling
+## 12. Bottom Hint Text
+
+- The hint text must sit outside the camera area, inside the white action section.
+- The gap between the camera area and the hint text should be `10px`.
+- The hint should be a single line, no wrapping.
+- Left and right page margins for the white section should be `20px`.
+- Text color should be `rgba(13,14,18,0.6)`.
+
+Example copy:
+
+- `一個の枠内に1問を配置してください。`
+- `枠の大きさを調整してください。`
+
+The hint should feel secondary and should not compete with the camera content.
+
+## 13. Full State Handling
 
 If the user tries to add a new box and no legal placement exists:
 - do not create the box
@@ -138,21 +189,7 @@ Toast requirements:
 - temporary
 - does not block the rest of the app permanently
 
-## 11. Visual Feedback
-
-Active state:
-- corner brackets become brand blue
-- badge background becomes brand blue
-- badge text becomes white
-
-Idle state:
-- corner brackets become white
-- badge background becomes white
-- badge text becomes brand blue
-
-The active-state color change must be immediate on gesture start and revert on release.
-
-## 12. Edge Cases
+## 14. Edge Cases
 
 - Very wide boxes must still feel draggable from the middle and top-middle area.
 - Very small boxes must still keep usable drag and close targets.
@@ -160,7 +197,7 @@ The active-state color change must be immediate on gesture start and revert on r
 - A box must never remain trapped inside another box after release.
 - The user should never need to shrink a box below the minimum size just to move it.
 
-## 13. Native Implementation Guidance
+## 15. Native Implementation Guidance
 
 - Keep geometry in a box model with `left`, `top`, `width`, `height`.
 - Store the gesture start rect before live updates begin.
@@ -169,18 +206,22 @@ The active-state color change must be immediate on gesture start and revert on r
 - Derive layout from measured screen bounds, not a hardcoded device canvas.
 - Keep hit slop generous while preserving small visual affordances.
 - Preserve coordinate precision during collision math; round only for rendering.
+- Use a composited mask or clip-path approach for the cutout so the inner box remains visually transparent enough to reveal the content image.
 
-## 14. Acceptance Criteria
+## 16. Acceptance Criteria
 
 The implementation is correct when:
 - the camera review area fits the real device screen
 - the initial box is centered and visually larger
 - new boxes are centered and smaller
+- the outer overlay is `60%` black
+- the box interior retains a lighter `20%` black emphasis while still revealing content
+- label badges stay blue with white text in all states
+- the close button stays visually small with a `32 x 32` hit target and `60%` black background
 - drag and resize can overlap temporarily
-- release never leaves invalid overlap
+- release never leaves invalid overlap and never crosses to the opposite side of the obstacle
 - active feedback is visible and immediate
-- close remains visually small but easy to tap
 - the top-right corner does not conflict with close
+- the hint text is outside the camera area with a `10px` gap
 - full-state toast appears centered
 - snap correction is short and deterministic
-
